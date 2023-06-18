@@ -5,6 +5,7 @@ A simple /proc/[pid]/maps parser.
 ```zig
 var maps = Maps.init(std.heap.page_allocator, std.os.linux.getpid());
 try maps.parse();
+defer maps.deinit(); // always free after parse!
 
 for(maps) |map| {
   std.testing.expect(map.checkPermission(Permission.Read));

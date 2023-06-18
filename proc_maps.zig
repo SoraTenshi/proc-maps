@@ -25,7 +25,7 @@ pub const Map = struct {
     offset: isize,
     device: []const u8,
     index_node: u32,
-    path: []const u8,
+    path: ?[]const u8,
 
     /// Parses the map line
     pub fn init(line: []const u8) ParseError!Map {
@@ -55,14 +55,12 @@ pub const Map = struct {
         const offset = map_line.next() orelse return ParseError.InvalidStructure;
         result.offset = std.fmt.parseInt(@TypeOf(result.offset), offset, 16) catch return ParseError.InvalidStructure;
 
-        const device = map_line.next() orelse return ParseError.InvalidStructure;
-        result.device = device;
+        result.device = map_line.next() orelse return ParseError.InvalidStructure;
 
         const node = map_line.next() orelse return ParseError.InvalidStructure;
         result.index_node = std.fmt.parseUnsigned(@TypeOf(result.index_node), node, 10) catch return ParseError.InvalidStructure;
 
-        const path = map_line.next() orelse return ParseError.InvalidStructure;
-        result.path = path;
+        result.path = map_line.next() orelse null;
 
         return result;
     }
@@ -80,29 +78,39 @@ pub const Maps = struct {
     /// The pid to query
     pid: linux.pid_t,
     /// The allocator
-    alloc: std.mem.Allocator,
+    alloc: std.heap.ArenaAllocator,
 
     /// Construct
     pub fn init(alloc: std.mem.Allocator, pid: linux.pid_t) Maps {
         return Maps{
             .maps = null,
             .pid = pid,
-            .alloc = alloc,
+            .alloc = std.heap.ArenaAllocator.init(alloc),
         };
+    }
+
+    pub fn deinit(self: *Maps) void {
+        self.alloc.deinit();
     }
 
     /// Parses the Map
     pub fn parse(self: *Maps) !void {
-        const template = "/proc/{s}/maps";
-        var maps_path: [template.len + 3]u8 = undefined;
-        try std.fmt.bufPrint(&maps_path, template, .{self.pid});
-        const file = try std.fs.openFileAbsolute(maps_path, .{});
-        const proc_maps = try file.readToEndAlloc(self.alloc, linux.PATH_MAX + 100);
+        const template = "/proc/{d}/maps";
+        const size = std.fmt.count(template, .{self.pid});
 
-        var as_lines = std.mem.tokenizeScalar(u8, proc_maps, "\n");
+        var maps_buffer: [template.len + 4]u8 = undefined;
+        _ = try std.fmt.bufPrint(&maps_buffer, template, .{self.pid});
+        const maps_path = maps_buffer[0..size];
+
+        const file = try std.fs.openFileAbsolute(maps_path, .{});
+        const proc_maps = try file.readToEndAlloc(self.alloc.allocator(), linux.PATH_MAX + 100);
+
+        const new_lines = std.mem.count(u8, proc_maps, "\n");
+        self.maps = try self.alloc.allocator().alloc(Map, new_lines + 1);
+        var as_lines = std.mem.tokenizeScalar(u8, proc_maps, '\n');
         var i: usize = 0;
         while (as_lines.next()) |line| : (i += 1) {
-            self.maps[i] = try Map.init(line);
+            self.maps.?[i] = try Map.init(line);
         }
     }
 };
