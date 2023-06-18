@@ -1,0 +1,4 @@
+.{
+    .name = "proc-maps",
+    .version = "0.0.1",
+}
