@@ -68,7 +68,7 @@ pub const Map = struct {
     }
 
     /// Checks whether or not the requested permission is in the mem-page
-    pub fn contains(self: Map, check: Permission) bool {
+    pub fn checkPermission(self: Map, check: Permission) bool {
         return (self.permissions & @enumToInt(check)) > 0;
     }
 };
@@ -140,8 +140,8 @@ test "check perms" {
         .path = "/test/path/something/lib/proc_maps/proc_mapper",
     };
 
-    try std.testing.expect(expected_map.contains(Permission.Read));
-    try std.testing.expect(expected_map.contains(Permission.Private));
-    try std.testing.expect(!expected_map.contains(Permission.Execute));
-    try std.testing.expect(!expected_map.contains(Permission.Write));
+    try std.testing.expect(expected_map.checkPermission(Permission.Read));
+    try std.testing.expect(expected_map.checkPermission(Permission.Private));
+    try std.testing.expect(!expected_map.checkPermission(Permission.Execute));
+    try std.testing.expect(!expected_map.checkPermission(Permission.Write));
 }
