@@ -44,10 +44,10 @@ pub const Map = struct {
         result.permissions = 0b0000;
         for (permissions) |p| {
             result.permissions |= switch (p) {
-                'r' => @enumToInt(Permission.Read),
-                'w' => @enumToInt(Permission.Write),
-                'x' => @enumToInt(Permission.Execute),
-                'p' => @enumToInt(Permission.Private),
+                'r' => @intFromEnum(Permission.Read),
+                'w' => @intFromEnum(Permission.Write),
+                'x' => @intFromEnum(Permission.Execute),
+                'p' => @intFromEnum(Permission.Private),
                 else => 0b0000,
             };
         }
@@ -67,7 +67,7 @@ pub const Map = struct {
 
     /// Checks whether or not the requested permission is in the mem-page
     pub fn checkPermission(self: Map, check: Permission) bool {
-        return (self.permissions & @enumToInt(check)) > 0;
+        return (self.permissions & @intFromEnum(check)) > 0;
     }
 };
 
@@ -126,7 +126,7 @@ test "parsing" {
         .start = 0x55b9b75fd000,
         .end = 0x55b9b7605000,
         .size = 0x8000,
-        .permissions = @enumToInt(Permission.Read) | @enumToInt(Permission.Private),
+        .permissions = @intFromEnum(Permission.Read) | @intFromEnum(Permission.Private),
         .offset = 0x00000000,
         .device = "08:20",
         .index_node = 641346,
@@ -141,7 +141,7 @@ test "check perms" {
         .start = 0x55b9b75fd000,
         .end = 0x55b9b7605000,
         .size = 0x8000,
-        .permissions = @enumToInt(Permission.Read) | @enumToInt(Permission.Private),
+        .permissions = @intFromEnum(Permission.Read) | @intFromEnum(Permission.Private),
         .offset = 0x00000000,
         .device = "08:20",
         .index_node = 641346,
